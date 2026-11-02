@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Real-Time Gym Coach</title>
+<meta name="description" content="Point your webcam at yourself and get live form feedback and rep counting while you train.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --concrete: #dfe2df;
+    --concrete-deep: #cfd3cf;
+    --ink: #16181b;
+    --muted: #4a5058;
+    --rubber: #1b1e22;
+    --plate-blue: #1d4ed8;
+    --plate-green: #2fb36b;
+    --plate-yellow: #f2b705;
+    --plate-red: #e5484d;
+    --chalk: #f2f4f3;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--concrete);
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { margin: 0; font-weight: 800; font-stretch: 72%; line-height: 1; letter-spacing: -0.005em; }
+  p { margin: 0; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--plate-blue); outline-offset: 3px; }
+
+  /* Nav */
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 22px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-stretch: 75%; font-size: 24px; text-decoration: none; }
+  .brand svg { width: 34px; height: 34px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-block; padding: 14px 24px; border-radius: 6px;
+    font: 700 17px/1.2 "Archivo", sans-serif; text-decoration: none;
+    background: var(--plate-blue); color: #fff; border: 2px solid var(--plate-blue);
+    transition: background .15s, color .15s;
+  }
+  .btn:hover { background: #1740b0; border-color: #1740b0; }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .btn.ghost:hover { background: var(--ink); color: var(--chalk); }
+  .btn.small { padding: 10px 18px; font-size: 16px; }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding: 40px 0 88px; }
+  .hero h1 { font-size: clamp(54px, 8.2vw, 104px); line-height: .92; }
+  .hero .lead { margin-top: 26px; max-width: 46ch; font-size: 20px; color: var(--muted); }
+  .hero .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero .note { margin-top: 18px; font-size: 15px; color: var(--muted); }
+
+  /* Demo panel */
+  .demo { background: var(--rubber); color: var(--chalk); border-radius: 10px; padding: 18px 18px 20px; }
+  .demo-head { display: flex; justify-content: space-between; font-size: 14px; color: #9aa3ad; padding: 0 4px 6px; }
+  .demo svg { display: block; width: 100%; height: auto; max-height: 420px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .stat { background: #262a30; border-radius: 6px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 30px; font-weight: 800; font-stretch: 72%; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; color: #9aa3ad; }
+  .cue { margin-top: 10px; background: #262a30; border-left: 6px solid var(--chalk); border-radius: 6px; padding: 12px 14px; font-weight: 700; font-size: 19px; transition: border-color .15s; }
+  .caption { margin-top: 12px; font-size: 14px; color: var(--muted); }
+
+  /* Sections */
+  section { padding: 72px 0; }
+  .section-title { font-size: clamp(38px, 5vw, 60px); max-width: 16ch; }
+  .section-intro { margin-top: 16px; max-width: 52ch; color: var(--muted); }
+
+  .steps { list-style: none; margin: 44px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .steps li { border-top: 4px solid var(--ink); padding-top: 16px; }
+  .steps .n { font-size: 56px; font-weight: 800; font-stretch: 70%; line-height: 1; color: var(--plate-blue); }
+  .steps h3 { font-size: 30px; margin: 10px 0 8px; }
+  .steps p { color: var(--muted); }
+
+  .features { margin-top: 44px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px 56px; }
+  .feature { border-top: 1px solid rgba(22,24,27,.35); padding-top: 18px; }
+  .feature h3 { font-size: 32px; margin-bottom: 10px; }
+  .feature p { color: var(--muted); max-width: 44ch; }
+
+  .tech { margin: 44px 0 0; display: grid; grid-template-columns: 220px 1fr; border-top: 2px solid var(--ink); }
+  .tech dt, .tech dd { margin: 0; padding: 16px 0; border-bottom: 1px solid rgba(22,24,27,.25); }
+  .tech dt { font-weight: 800; font-stretch: 75%; font-size: 24px; }
+  .tech dd { color: var(--muted); align-self: center; }
+
+  /* Call to action */
+  .cta { background: var(--plate-blue); color: #fff; }
+  .cta .wrap { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; justify-content: space-between; }
+  .cta h2 { font-size: clamp(42px, 6vw, 76px); max-width: 14ch; }
+  .cta .btn { background: #fff; color: var(--plate-blue); border-color: #fff; font-size: 19px; padding: 16px 28px; }
+  .cta .btn:hover { background: var(--chalk); }
+  .cta :focus-visible { outline-color: #fff; }
+
+  footer { padding: 36px 0 48px; font-size: 15px; color: var(--muted); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+
+  @media (max-width: 860px) {
+    body { font-size: 17px; }
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-bottom: 56px; }
+    .steps, .features { grid-template-columns: 1fr; }
+    .tech { grid-template-columns: 1fr; }
+    .tech dt { padding-bottom: 2px; border-bottom: 0; }
+    .tech dd { padding-top: 0; }
+    section { padding: 52px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="nav">
+    <a class="brand" href="#top" aria-label="AI Real-Time Gym Coach, home">
+      <svg viewBox="0 0 34 34" aria-hidden="true">
+        <path d="M6 28 L14 14 L22 20 L28 6" fill="none" stroke="#16181b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="6" cy="28" r="4" fill="#1d4ed8"/><circle cx="14" cy="14" r="4" fill="#1d4ed8"/>
+        <circle cx="22" cy="20" r="4" fill="#1d4ed8"/><circle cx="28" cy="6" r="4" fill="#1d4ed8"/>
+      </svg>
+      Gym Coach
+    </a>
+    <a class="btn small" data-app href="#">Open the coach</a>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <h1>A coach that watches every rep.</h1>
+        <p class="lead">Point your webcam at yourself. The AI Real-Time Gym Coach tracks your joints, counts your reps, and tells you what to fix while you are still mid-set.</p>
+        <div class="actions">
+          <a class="btn" data-app href="#">Open the coach</a>
+          <a class="btn ghost" href="#how">See how it works</a>
+        </div>
+        <p class="note">Runs in your browser. You need a webcam.</p>
+      </div>
+
+      <div>
+        <div class="demo">
+          <div class="demo-head"><span>Example: squat</span><span>Side view</span></div>
+          <svg id="fig" viewBox="0 0 320 420" role="img" aria-label="Animated stick figure doing a squat, with joint angles and form cues updating on every rep.">
+            <line x1="20" y1="385" x2="300" y2="385" stroke="#3a4048" stroke-width="3" stroke-linecap="round"/>
+            <line id="foot" stroke="#f2f4f3" stroke-width="8" stroke-linecap="round"/>
+            <line id="shin" stroke-width="9" stroke-linecap="round"/>
+            <line id="thigh" stroke-width="9" stroke-linecap="round"/>
+            <line id="torso" stroke-width="9" stroke-linecap="round"/>
+            <circle id="head" r="17" fill="none" stroke="#f2f4f3" stroke-width="6"/>
+            <circle id="plate" r="25" fill="none" stroke="#5b636d" stroke-width="4"/>
+            <circle id="jA" r="6" fill="#16181b" stroke="#f2f4f3" stroke-width="3"/>
+            <circle id="jK" r="6" fill="#16181b" stroke="#f2f4f3" stroke-width="3"/>
+            <circle id="jH" r="6" fill="#16181b" stroke="#f2f4f3" stroke-width="3"/>
+            <circle id="jS" r="6" fill="#16181b" stroke="#f2f4f3" stroke-width="3"/>
+          </svg>
+          <div class="stats" aria-hidden="true">
+            <div class="stat"><b id="sKnee">174°</b><span>Knee angle</span></div>
+            <div class="stat"><b id="sReps">0</b><span>Reps</span></div>
+            <div class="stat"><b id="sFlag">0</b><span>Flagged</span></div>
+          </div>
+          <div class="cue" id="cue" aria-hidden="true">Get set.</div>
+        </div>
+        <p class="caption">Illustrated demo. The real app tracks your own webcam feed.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <h2 class="section-title">From camera to feedback in three steps.</h2>
+    <ol class="steps">
+      <li>
+        <div class="n">1</div>
+        <h3>Open the app</h3>
+        <p>Allow camera access when your browser asks. Nothing to install.</p>
+      </li>
+      <li>
+        <div class="n">2</div>
+        <h3>Get in frame</h3>
+        <p>Step back until your whole body is visible, then start your set.</p>
+      </li>
+      <li>
+        <div class="n">3</div>
+        <h3>Follow the cues</h3>
+        <p>The coach counts your reps and flags form problems as they happen.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="features" style="background: var(--concrete-deep);">
+  <div class="wrap">
+    <h2 class="section-title">What it does for you.</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>Live pose tracking</h3>
+        <p>MediaPipe locates your shoulders, hips, knees and ankles in every frame of your webcam feed.</p>
+      </div>
+      <div class="feature">
+        <h3>Automatic rep counting</h3>
+        <p>The coach keeps count, so you can put your attention on the set instead of the number.</p>
+      </div>
+      <div class="feature">
+        <h3>Coaching in plain language</h3>
+        <p>An AI model, served through Groq, turns your movement data into short tips you can act on.</p>
+      </div>
+      <div class="feature">
+        <h3>Metrics on screen</h3>
+        <p>Rep counts and form metrics update live next to your video as you train.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <h2 class="section-title">Built with.</h2>
+    <dl class="tech">
+      <dt>Streamlit</dt><dd>The web app and its interface.</dd>
+      <dt>streamlit-webrtc</dt><dd>Streams your webcam into the app in real time.</dd>
+      <dt>MediaPipe</dt><dd>Detects body landmarks in each frame.</dd>
+      <dt>OpenCV</dt><dd>Handles the video frames and the drawing on top of them.</dd>
+      <dt>Groq</dt><dd>Generates the written coaching feedback.</dd>
+    </dl>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <h2>Try it on your next set.</h2>
+    <a class="btn" data-app href="#">Open the coach</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>AI Real-Time Gym Coach. Not medical advice. Stop if something hurts.</span>
+    <a data-repo href="#">Source code on GitHub</a>
+  </div>
+</footer>
+
+<script>
+  // Edit these two lines, then every link on the page updates.
+  const APP_URL  = "https://airealtimegymcoach-mqvpagj99awbruwhzb9ayz.streamlit.app/";
+  const REPO_URL = "https://github.com/Tarini-Soni/AI_Real_Time_GYM_Coach";
+
+  document.querySelectorAll("[data-app]").forEach(a => { a.href = APP_URL; a.target = "_blank"; a.rel = "noopener"; });
+  document.querySelectorAll("[data-repo]").forEach(a => { a.href = REPO_URL; a.target = "_blank"; a.rel = "noopener"; });
+
+  // Squat demo: simple side-view geometry, angles in degrees.
+  (function () {
+    const GROUND = 385, AX = 130, L1 = 95, L2 = 100, L3 = 105, PERIOD = 3600;
+    const rad = d => d * Math.PI / 180;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const $ = id => document.getElementById(id);
+    const el = { foot: $("foot"), shin: $("shin"), thigh: $("thigh"), torso: $("torso"), head: $("head"), plate: $("plate"),
+                 jA: $("jA"), jK: $("jK"), jH: $("jH"), jS: $("jS"),
+                 knee: $("sKnee"), reps: $("sReps"), flag: $("sFlag"), cue: $("cue") };
+    const COLOR = { base: "var(--chalk)", good: "var(--plate-green)", warn: "var(--plate-yellow)", bad: "var(--plate-red)" };
+
+    const P = (x, y) => ({ x: x, y: GROUND - y });           // math coords (y up) to screen coords
+    function seg(line, a, b) { line.setAttribute("x1", a.x); line.setAttribute("y1", a.y); line.setAttribute("x2", b.x); line.setAttribute("y2", b.y); }
+    function dot(c, p) { c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); }
+
+    function draw(p, rep) {
+      const d = 0.5 - 0.5 * Math.cos(2 * Math.PI * p);        // 0 standing, 1 bottom
+      const faulty = rep % 3 === 2;                            // every third rep the chest drops
+      const lean = lerp(3, faulty ? 58 : 38, d);
+      const s = rad(lerp(3, 30, d)), th = rad(lerp(3, 92, d)), ph = rad(lean);
+
+      const ankle = { x: AX, y: 0 };
+      const knee  = { x: ankle.x + L1 * Math.sin(s), y: L1 * Math.cos(s) };
+      const hip   = { x: knee.x - L2 * Math.sin(th), y: knee.y + L2 * Math.cos(th) };
+      const sh    = { x: hip.x + L3 * Math.sin(ph),  y: hip.y + L3 * Math.cos(ph) };
+      const head  = { x: sh.x + 32 * Math.sin(ph),   y: sh.y + 32 * Math.cos(ph) };
+
+      const A = P(ankle.x, ankle.y), K = P(knee.x, knee.y), H = P(hip.x, hip.y), S = P(sh.x, sh.y), Hd = P(head.x, head.y);
+      seg(el.foot, A, P(ankle.x + 34, 0));
+      seg(el.shin, A, K); seg(el.thigh, K, H); seg(el.torso, H, S);
+      dot(el.head, Hd); dot(el.plate, S);
+      dot(el.jA, A); dot(el.jK, K); dot(el.jH, H); dot(el.jS, S);
+
+      const v1 = { x: ankle.x - knee.x, y: ankle.y - knee.y }, v2 = { x: hip.x - knee.x, y: hip.y - knee.y };
+      const kneeAngle = Math.acos((v1.x * v2.x + v1.y * v2.y) / (Math.hypot(v1.x, v1.y) * Math.hypot(v2.x, v2.y))) * 180 / Math.PI;
+      const atDepth = hip.y <= knee.y + 2;
+
+      let torsoColor = COLOR.base, cueColor = COLOR.base, cue;
+      if (lean > 52)      { torsoColor = cueColor = COLOR.bad;  cue = "Chest is dropping. Lift it."; }
+      else if (lean > 45) { torsoColor = cueColor = COLOR.warn; cue = "Watch your chest."; }
+      else if (atDepth)   { cueColor = COLOR.good;              cue = "Depth reached."; }
+      else if (d < 0.04)  { cue = "Get set."; }
+      else                { cue = p < 0.5 ? "Going down." : "Drive up."; }
+
+      el.shin.style.stroke = el.thigh.style.stroke = atDepth ? COLOR.good : COLOR.base;
+      el.torso.style.stroke = torsoColor;
+      el.knee.textContent = Math.round(kneeAngle) + "°";
+      el.cue.textContent = cue;
+      el.cue.style.borderLeftColor = cueColor;
+
+      const done = rep % 9;
+      el.reps.textContent = done;
+      el.flag.textContent = Math.floor(done / 3);
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { draw(0.5, 0); return; }
+    const t0 = performance.now();
+    (function frame(now) {
+      const t = now - t0;
+      draw((t % PERIOD) / PERIOD, Math.floor(t / PERIOD));
+      requestAnimationFrame(frame);
+    })(t0);
+  })();
+</script>
+</body>
+</html>
