@@ -17,6 +17,29 @@ from services.coaching.tts import TextToSpeech
 from services.coaching.voice_pipeline import VoicePipeline, autoplay_audio
 
 
+def get_rtc_configuration():
+    # STUN alone is not enough on Streamlit Cloud, so a TURN relay is added
+    # when its credentials are present in the app's secrets.
+    ice_servers = [{"urls": ["stun:stun.l.google.com:19302"]}]
+
+    try:
+        username = st.secrets["TURN_USERNAME"]
+        credential = st.secrets["TURN_CREDENTIAL"]
+        host = st.secrets.get("TURN_HOST", "standard.relay.metered.ca")
+    except Exception:
+        return {"iceServers": ice_servers}
+
+    for url in [
+        f"turn:{host}:80",
+        f"turn:{host}:80?transport=tcp",
+        f"turn:{host}:443",
+        f"turns:{host}:443?transport=tcp",
+    ]:
+        ice_servers.append({"urls": [url], "username": username, "credential": credential})
+
+    return {"iceServers": ice_servers}
+
+
 def render_sidebar_metrics():
     exercise = st.session_state.get("active_exercise")
     total_reps = st.session_state.get("reps")
@@ -210,7 +233,7 @@ def main():
             key="exercise-analysis",
             mode=WebRtcMode.SENDRECV,
             video_processor_factory=VideoProcessorClass,
-            rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+            rtc_configuration=get_rtc_configuration(),
             media_stream_constraints={
                 "video": True,
                 "audio": False
